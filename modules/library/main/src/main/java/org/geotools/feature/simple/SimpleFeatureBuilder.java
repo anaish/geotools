@@ -21,7 +21,10 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
+
+import javax.servlet.http.HttpServletRequest;
 
 import org.geotools.data.DataUtilities;
 import org.geotools.factory.CommonFactoryFinder;
@@ -35,7 +38,15 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.feature.type.Name;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
+import com.geotabular.sdh.SdhV1Guice;
+import com.geotabular.sdh.data.SdhConfig;
+import com.geotabular.sdh.data.SdhServerRegistry;
+import com.google.common.base.Optional;
+import com.google.inject.Injector;
 import com.vividsolutions.jts.geom.Geometry;
 
 /**
@@ -154,12 +165,20 @@ public class SimpleFeatureBuilder {
     Map<Object, Object> featureUserData;
     
     boolean validating;
+
+	private Injector injector;
+
+	private SdhServerRegistry sdhServerRegistry;
     
     public SimpleFeatureBuilder(SimpleFeatureType featureType) {
         this(featureType, CommonFactoryFinder.getFeatureFactory(null));
     }
     
     public SimpleFeatureBuilder(SimpleFeatureType featureType, FeatureFactory factory) {
+    	
+    	this.injector = SdhV1Guice.getInjector();
+    	this.sdhServerRegistry = this.injector.getInstance(SdhServerRegistry.class);
+    	
         this.featureType = featureType;
         this.factory = factory;
 
@@ -298,12 +317,29 @@ public class SimpleFeatureBuilder {
      *            The value of the attribute.
      */
     public void set(int index, Object value) {
+    	
         if(index >= values.length)
             throw new ArrayIndexOutOfBoundsException("Can handle " 
                     + values.length + " attributes only, index is " + index);
         
         AttributeDescriptor descriptor = featureType.getDescriptor(index);
         values[index] = convert(value, descriptor);
+                
+        Optional<SdhConfig> sdhConfig = this.sdhServerRegistry.getConfigByAttributeDescriptor(descriptor);
+        
+		if( sdhConfig.isPresent()){
+			
+			String shapeFileJoinField = sdhConfig.get().getShapeFileJoinField();
+			Optional<String> tableCount = this.sdhServerRegistry.getTableValue(featureType, shapeFileJoinField);
+			if(tableCount.isPresent()){
+				values[index] = tableCount.get();
+			} else {
+				values[index] = "undefined";
+			}
+		        	
+        }
+        
+        
         if(validating)
             Types.validate(descriptor, values[index]);
     }

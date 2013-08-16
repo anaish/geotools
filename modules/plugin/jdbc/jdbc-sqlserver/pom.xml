@@ -74,6 +74,14 @@
       </roles>
     </developer>
   </developers>
+  
+   <dependencies>
+	<dependency>
+      <groupId>org.geotools</groupId>
+      <artifactId>gt-referencing</artifactId>
+	  <version>10-SNAPSHOT</version>
+    </dependency>
+  </dependencies>
 
   <profiles>
     <profile>

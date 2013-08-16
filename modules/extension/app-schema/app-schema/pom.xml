@@ -46,7 +46,14 @@
         </developer>
     </developers>
 
-    <dependencies>      
+    <dependencies>    
+
+	<dependency>
+      <groupId>jdom</groupId>
+      <artifactId>jdom</artifactId>
+	  <version>1.0</version>
+    </dependency>
+  
 	<dependency>
             <groupId>org.geotools</groupId>
             <artifactId>gt-complex</artifactId>

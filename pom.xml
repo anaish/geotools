@@ -573,7 +573,8 @@
   <!-- =========================================================== -->
   <dependencyManagement>
     <dependencies>
-      <dependency>
+	
+		<dependency>
         <groupId>net.java.dev.jsr-275</groupId>
         <artifactId>jsr-275</artifactId>
         <version>1.0-beta-2</version>
@@ -1058,7 +1059,11 @@
         <artifactId>icu4j</artifactId>
         <version>3.4.4</version>
       </dependency>
+	
+	  
     </dependencies>
+	
+	
   </dependencyManagement>
 
 

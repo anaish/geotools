@@ -42,9 +42,9 @@ import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import com.geotabular.sdh.SdhConfig;
 import com.geotabular.sdh.SdhV1Guice;
-import com.geotabular.sdh.data.SdhConfig;
-import com.geotabular.sdh.data.SdhServerRegistry;
+import com.geotabular.sdh.services.SdhServerRegistry;
 import com.google.common.base.Optional;
 import com.google.inject.Injector;
 import com.vividsolutions.jts.geom.Geometry;
@@ -330,7 +330,7 @@ public class SimpleFeatureBuilder {
 		if( sdhConfig.isPresent()){
 			
 			String shapeFileJoinField = sdhConfig.get().getShapeFileJoinField();
-			Optional<String> tableCount = this.sdhServerRegistry.getTableValue(featureType, shapeFileJoinField);
+			Optional<String> tableCount = this.sdhServerRegistry.getTableService().getTableValue(featureType, shapeFileJoinField);
 			if(tableCount.isPresent()){
 				values[index] = tableCount.get();
 			} else {

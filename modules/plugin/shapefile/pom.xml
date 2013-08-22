@@ -164,8 +164,8 @@
     </dependency>
     
     <dependency>
-      <groupId>org.geotabular.sdh.data</groupId>
-      <artifactId>sdh</artifactId>
+      <groupId>org.geotabular.geojsonlink</groupId>
+      <artifactId>geojsonlink</artifactId>
       <version>0.0.1-SNAPSHOT</version>
 	</dependency>
   

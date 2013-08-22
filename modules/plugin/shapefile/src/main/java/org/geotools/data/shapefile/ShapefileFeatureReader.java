@@ -36,9 +36,9 @@ import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.feature.type.GeometryDescriptor;
 
-import com.geotabular.sdh.SdhConfig;
-import com.geotabular.sdh.SdhV1Guice;
-import com.geotabular.sdh.services.SdhServerRegistry;
+import com.geotabular.geojsonlink.GeoJsonLinkConfig;
+import com.geotabular.geojsonlink.GeoJsonLinkV1Guice;
+import com.geotabular.geojsonlink.services.GeoJsonLinkServerRegistry;
 import com.google.common.base.Optional;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
@@ -110,8 +110,8 @@ class ShapefileFeatureReader implements FeatureReader<SimpleFeatureType, SimpleF
                         }
                     }
                     if (!found) {
-                    	SdhServerRegistry registry = SdhV1Guice.getInjector().getInstance(SdhServerRegistry.class);
-                    	Optional<SdhConfig> configBySchemaName = registry.getConfigByTableCountFieldName(attName);
+                    	GeoJsonLinkServerRegistry registry = GeoJsonLinkV1Guice.getInjector().getInstance(GeoJsonLinkServerRegistry.class);
+                    	Optional<GeoJsonLinkConfig> configBySchemaName = registry.getConfigByTableCountFieldName(attName);
 						if(!configBySchemaName.isPresent()){
 	                        throw new IOException("Could not find attribute " + attName
 	                                + " (mul count: " + count);

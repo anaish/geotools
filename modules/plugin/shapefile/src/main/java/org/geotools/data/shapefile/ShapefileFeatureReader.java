@@ -40,6 +40,7 @@ import com.geotabular.geojsonlink.GeoJsonLinkConfig;
 import com.geotabular.geojsonlink.GeoJsonLinkV1Guice;
 import com.geotabular.geojsonlink.services.GeoJsonLinkServerRegistry;
 import com.google.common.base.Optional;
+import com.google.inject.Injector;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 
@@ -68,7 +69,12 @@ class ShapefileFeatureReader implements FeatureReader<SimpleFeatureType, SimpleF
     int idxBaseLen;
 
     IndexedFidReader fidReader;
+    
+    private Injector injector;
 
+	private GeoJsonLinkServerRegistry geoJsonLinkServerRegistry;
+
+	
     public ShapefileFeatureReader(SimpleFeatureType schema, ShapefileReader shp, DbaseFileReader dbf, IndexedFidReader fidReader)
             throws IOException {
         this.schema = schema;
@@ -76,7 +82,11 @@ class ShapefileFeatureReader implements FeatureReader<SimpleFeatureType, SimpleF
         this.dbf = dbf;
         this.fidReader = fidReader;
         this.builder = new SimpleFeatureBuilder(schema);
-        
+        this.injector = GeoJsonLinkV1Guice.getInjector();
+    	this.setGeoJsonLinkServerRegistry(this.injector.getInstance(GeoJsonLinkServerRegistry.class));      
+
+    	final GeoJsonLinkServerRegistry registry = GeoJsonLinkV1Guice.getInjector().getInstance(GeoJsonLinkServerRegistry.class);
+
         idxBuffer = new StringBuffer(schema.getTypeName());
         idxBuffer.append('.');
         idxBaseLen = idxBuffer.length();
@@ -110,7 +120,6 @@ class ShapefileFeatureReader implements FeatureReader<SimpleFeatureType, SimpleF
                         }
                     }
                     if (!found) {
-                    	GeoJsonLinkServerRegistry registry = GeoJsonLinkV1Guice.getInjector().getInstance(GeoJsonLinkServerRegistry.class);
                     	Optional<GeoJsonLinkConfig> configBySchemaName = registry.getConfigByTableCountFieldName(attName);
 						if(!configBySchemaName.isPresent()){
 	                        throw new IOException("Could not find attribute " + attName
@@ -217,8 +226,33 @@ class ShapefileFeatureReader implements FeatureReader<SimpleFeatureType, SimpleF
     }
 
     SimpleFeature buildFeature(int number, Geometry geometry, Row row) throws IOException {
+    	
+    	//get the join field value first
+    	for( int index = 0; index < idxBuffer.length(); index++ ){
+    		
+    		if(index >= 0){
+    			
+    			Object rowObject = row.read(index);
+            	String localName = this.dbf.getHeader().getFieldName(index);
+				Optional<GeoJsonLinkConfig> geoJsonLinkConfig = this.geoJsonLinkServerRegistry.getConfigByTableJoinFieldName(localName);
+
+            	if(geoJsonLinkConfig.isPresent()){
+	                String joinValue = String.valueOf(rowObject);
+	            	builder.setJoinValue(joinValue);
+	            	break;
+            	}
+            	
+    			
+    		}
+    		
+    	}
+    	
+    	
+    	
         if (dbfindexes != null) {
             for (int i = 0; i < dbfindexes.length; i++) {
+            	
+            	
                 if (dbfindexes[i] == -1) {
                     builder.add(geometry);
                 } else {
@@ -304,5 +338,13 @@ class ShapefileFeatureReader implements FeatureReader<SimpleFeatureType, SimpleF
     ShapeType getShapeType() {
         return shp.getHeader().getShapeType();
     }
+
+	public GeoJsonLinkServerRegistry getGeoJsonLinkServerRegistry() {
+		return geoJsonLinkServerRegistry;
+	}
+
+	public void setGeoJsonLinkServerRegistry(GeoJsonLinkServerRegistry geoJsonLinkServerRegistry) {
+		this.geoJsonLinkServerRegistry = geoJsonLinkServerRegistry;
+	}
 
 }

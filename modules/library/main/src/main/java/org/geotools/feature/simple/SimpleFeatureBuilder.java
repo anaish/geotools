@@ -40,6 +40,7 @@ import org.opengis.feature.type.Name;
 import com.geotabular.geojsonlink.GeoJsonLinkConfig;
 import com.geotabular.geojsonlink.GeoJsonLinkV1Guice;
 import com.geotabular.geojsonlink.services.GeoJsonLinkServerRegistry;
+import com.geotabular.geojsonlink.services.TableService;
 import com.google.common.base.Optional;
 import com.google.inject.Injector;
 import com.vividsolutions.jts.geom.Geometry;
@@ -164,15 +165,19 @@ public class SimpleFeatureBuilder {
 	private Injector injector;
 
 	private GeoJsonLinkServerRegistry geoJsonLinkServerRegistry;
+
+	private String joinValue;
     
-    public SimpleFeatureBuilder(SimpleFeatureType featureType) {
+   
+
+	public SimpleFeatureBuilder(SimpleFeatureType featureType) {
         this(featureType, CommonFactoryFinder.getFeatureFactory(null));
     }
     
     public SimpleFeatureBuilder(SimpleFeatureType featureType, FeatureFactory factory) {
     	
     	this.injector = GeoJsonLinkV1Guice.getInjector();
-    	this.geoJsonLinkServerRegistry = this.injector.getInstance(GeoJsonLinkServerRegistry.class);
+    	this.setGeoJsonLinkServerRegistry(this.injector.getInstance(GeoJsonLinkServerRegistry.class));
     	
         this.featureType = featureType;
         this.factory = factory;
@@ -185,8 +190,18 @@ public class SimpleFeatureBuilder {
         reset();
     }
     
+    public GeoJsonLinkServerRegistry getGeoJsonLinkServerRegistry() {
+		return geoJsonLinkServerRegistry;
+	}
+
+	public void setGeoJsonLinkServerRegistry(
+			GeoJsonLinkServerRegistry geoJsonLinkServerRegistry) {
+		this.geoJsonLinkServerRegistry = geoJsonLinkServerRegistry;
+	}
+    
     public void reset() {
         values = new Object[featureType.getAttributeCount()];
+        this.joinValue = "undefined";
         next = 0;
         userData = null;
         featureUserData = null;
@@ -319,13 +334,15 @@ public class SimpleFeatureBuilder {
         
         AttributeDescriptor descriptor = featureType.getDescriptor(index);
         values[index] = convert(value, descriptor);
-                
-        Optional<GeoJsonLinkConfig> GeoJsonLinkConfig = this.geoJsonLinkServerRegistry.getConfigByAttributeDescriptor(descriptor);
         
-		if( GeoJsonLinkConfig.isPresent()){
+        Optional<GeoJsonLinkConfig> geoJsonLinkConfig = this.geoJsonLinkServerRegistry.getConfigByTableCountFieldName(descriptor.getLocalName());
+        
+		if( geoJsonLinkConfig.isPresent()){
 			
-			String shapeFileJoinField = GeoJsonLinkConfig.get().getShapeFileJoinField();
-			Optional<String> tableCount = this.geoJsonLinkServerRegistry.getTableService().getTableValue(featureType, shapeFileJoinField);
+			String shapeFileJoinField = geoJsonLinkConfig.get().getShapeFileJoinField();
+			final String joinFieldValue = this.joinValue;
+			TableService tableService = this.geoJsonLinkServerRegistry.getTableService();
+			Optional<String> tableCount = tableService.getTableValue(geoJsonLinkConfig.get(), featureType, shapeFileJoinField, joinFieldValue);
 			if(tableCount.isPresent()){
 				values[index] = tableCount.get();
 			} else {
@@ -638,4 +655,8 @@ public class SimpleFeatureBuilder {
     public void setValidating(boolean validating) {
         this.validating = validating;
     }
+
+	public void setJoinValue(String joinValue) {
+		this.joinValue = joinValue;
+	}
 }

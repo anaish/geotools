@@ -232,13 +232,13 @@ class ShapefileFeatureReader implements FeatureReader<SimpleFeatureType, SimpleF
     		
     		if(index >= 0){
     			
-    			Object rowObject = row.read(index);
-            	String localName = this.dbf.getHeader().getFieldName(index);
-				Optional<GeoJsonLinkConfig> geoJsonLinkConfig = this.geoJsonLinkServerRegistry.getConfigByTableJoinFieldName(localName);
+    			final Object rowObject = row.read(index);
+            	final String localName = this.dbf.getHeader().getFieldName(index);
+				final Optional<GeoJsonLinkConfig> geoJsonLinkConfig = this.geoJsonLinkServerRegistry.getConfigByTableJoinFieldName(localName);
 
             	if(geoJsonLinkConfig.isPresent()){
 	                String joinValue = String.valueOf(rowObject);
-	            	builder.setJoinValue(joinValue);
+	            	builder.setJoinValue(Optional.fromNullable(joinValue));
 	            	break;
             	}
             	

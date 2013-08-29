@@ -166,7 +166,9 @@ public class SimpleFeatureBuilder {
 
 	private GeoJsonLinkServerRegistry geoJsonLinkServerRegistry;
 
-	private String joinValue;
+	private Optional<String> joinValue;
+
+	private TableService tableService;
     
    
 
@@ -178,6 +180,7 @@ public class SimpleFeatureBuilder {
     	
     	this.injector = GeoJsonLinkV1Guice.getInjector();
     	this.setGeoJsonLinkServerRegistry(this.injector.getInstance(GeoJsonLinkServerRegistry.class));
+    	tableService = this.getGeoJsonLinkServerRegistry().getTableService();
     	
         this.featureType = featureType;
         this.factory = factory;
@@ -201,7 +204,7 @@ public class SimpleFeatureBuilder {
     
     public void reset() {
         values = new Object[featureType.getAttributeCount()];
-        this.joinValue = "undefined";
+        this.joinValue = Optional.absent();
         next = 0;
         userData = null;
         featureUserData = null;
@@ -338,19 +341,18 @@ public class SimpleFeatureBuilder {
         Optional<GeoJsonLinkConfig> geoJsonLinkConfig = this.geoJsonLinkServerRegistry.getConfigByTableCountFieldName(descriptor.getLocalName());
         
 		if( geoJsonLinkConfig.isPresent()){
-			
-			String shapeFileJoinField = geoJsonLinkConfig.get().getShapeFileJoinField();
-			final String joinFieldValue = this.joinValue;
-			TableService tableService = this.geoJsonLinkServerRegistry.getTableService();
-			Optional<String> tableCount = tableService.getTableValue(geoJsonLinkConfig.get(), featureType, shapeFileJoinField, joinFieldValue);
-			if(tableCount.isPresent()){
-				values[index] = tableCount.get();
-			} else {
-				values[index] = "undefined";
+			final GeoJsonLinkConfig linkConfig = geoJsonLinkConfig.get();
+			final String shapeFileJoinField = linkConfig.getShapeFileJoinField();
+			final Optional<String> joinFieldValue = this.getJoinValue();
+			if(joinFieldValue.isPresent()){
+				final Optional<String> tableCount = tableService.getTableValue(linkConfig.getTableCountField(),shapeFileJoinField, joinFieldValue.get());
+				if(tableCount.isPresent()){
+					values[index] = tableCount.get();
+				} else {
+					values[index] = "undefined";
+				}
 			}
-		        	
         }
-        
         
         if(validating)
             Types.validate(descriptor, values[index]);
@@ -656,7 +658,11 @@ public class SimpleFeatureBuilder {
         this.validating = validating;
     }
 
-	public void setJoinValue(String joinValue) {
+	public void setJoinValue(Optional<String> joinValue) {
 		this.joinValue = joinValue;
+	}
+	
+	public Optional<String> getJoinValue() {
+		return this.joinValue;
 	}
 }
